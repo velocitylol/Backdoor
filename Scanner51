@@ -1,14 +1,10 @@
-print(">>> backdoor scanner loading hi...")
+print("backdoor scanner")
 
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
-while not plr do
-    task.wait()
-    plr = Players.LocalPlayer
-end
+while not plr do task.wait() plr = Players.LocalPlayer end
 local pg = plr:WaitForChild("PlayerGui")
-
-local RS = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 local old = pg:FindFirstChild("BDUI")
 if old then old:Destroy() end
@@ -46,10 +42,10 @@ local stroke = Instance.new("UIStroke", fr)
 stroke.Color = Color3.fromRGB(60, 60, 90)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -180, 0, 20)
+title.Size = UDim2.new(1, -20, 0, 20)
 title.Position = UDim2.new(0, 6, 0, 4)
 title.BackgroundTransparency = 1
-title.Text = "Backdoor Scanner  [drag]"
+title.Text = "backdoor scanner  [drag]"
 title.TextColor3 = Color3.fromRGB(220, 220, 240)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
@@ -57,30 +53,56 @@ title.TextSize = 11
 title.ZIndex = 3
 title.Parent = fr
 
-local function mkBtn(t, x, c)
+local function mkBtn(t, c, parent)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 54, 0, 20)
-    b.Position = UDim2.new(1, x, 0, 4)
     b.BackgroundColor3 = c
     b.BorderSizePixel = 0
     b.Text = t
     b.TextColor3 = Color3.fromRGB(255, 255, 255)
     b.Font = Enum.Font.GothamBold
     b.TextSize = 10
+    b.TextWrapped = true
     b.ZIndex = 3
-    b.Parent = fr
+    b.Parent = parent
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     return b
 end
 
-local scanB = mkBtn("Scan", -176, Color3.fromRGB(200, 30, 30))
-local copyB = mkBtn("Copy", -116, Color3.fromRGB(55, 110, 200))
-local saveB = mkBtn("Save", -60,  Color3.fromRGB(80, 80, 100))
+local topBtn = Instance.new("Frame")
+topBtn.Size = UDim2.new(1, -12, 0, 22)
+topBtn.Position = UDim2.new(0, 6, 0, 28)
+topBtn.BackgroundTransparency = 1
+topBtn.ZIndex = 3
+topBtn.Parent = fr
+local tg = Instance.new("UIGridLayout", topBtn)
+tg.CellSize = UDim2.new(0.33, -2, 0, 22)
+tg.CellPadding = UDim2.new(0, 3, 0, 0)
+tg.SortOrder = Enum.SortOrder.LayoutOrder
+
+local scanB  = mkBtn("scan",          Color3.fromRGB(180, 40, 40),   topBtn)
+local hooksB = mkBtn("install hooks", Color3.fromRGB(120, 60, 140),  topBtn)
+local memB   = mkBtn("mem + env",     Color3.fromRGB(50, 120, 60),   topBtn)
+
+local botBtn = Instance.new("Frame")
+botBtn.Size = UDim2.new(1, -12, 0, 22)
+botBtn.Position = UDim2.new(0, 6, 1, -28)
+botBtn.BackgroundTransparency = 1
+botBtn.ZIndex = 3
+botBtn.Parent = fr
+local bg = Instance.new("UIGridLayout", botBtn)
+bg.CellSize = UDim2.new(0.25, -2, 0, 22)
+bg.CellPadding = UDim2.new(0, 3, 0, 0)
+bg.SortOrder = Enum.SortOrder.LayoutOrder
+
+local dumpB  = mkBtn("dump",  Color3.fromRGB(160, 90, 40),  botBtn)
+local copyB  = mkBtn("copy",  Color3.fromRGB(55, 110, 200), botBtn)
+local saveB  = mkBtn("save",  Color3.fromRGB(70, 70, 110),  botBtn)
+local clearB = mkBtn("clear", Color3.fromRGB(55, 55, 70),   botBtn)
 
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -12, 0, 20)
-status.Position = UDim2.new(0, 6, 0, 28)
-status.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+status.Size = UDim2.new(1, -12, 0, 18)
+status.Position = UDim2.new(0, 6, 0, 52)
+status.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 status.BorderSizePixel = 0
 status.Text = " idle"
 status.TextColor3 = Color3.fromRGB(180, 180, 200)
@@ -91,48 +113,23 @@ status.ZIndex = 3
 status.Parent = fr
 Instance.new("UICorner", status).CornerRadius = UDim.new(0, 4)
 
-local dumpAllB = Instance.new("TextButton")
-dumpAllB.Size = UDim2.new(0.5, -8, 0, 24)
-dumpAllB.Position = UDim2.new(0, 6, 1, -30)
-dumpAllB.BackgroundColor3 = Color3.fromRGB(140, 60, 140)
-dumpAllB.BorderSizePixel = 0
-dumpAllB.Text = "dump scripts"
-dumpAllB.TextColor3 = Color3.fromRGB(255, 255, 255)
-dumpAllB.Font = Enum.Font.GothamBold
-dumpAllB.TextSize = 10
-dumpAllB.ZIndex = 3
-dumpAllB.Parent = fr
-Instance.new("UICorner", dumpAllB).CornerRadius = UDim.new(0, 4)
-
-local clearB = Instance.new("TextButton")
-clearB.Size = UDim2.new(0.5, -8, 0, 24)
-clearB.Position = UDim2.new(0.5, 2, 1, -30)
-clearB.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-clearB.BorderSizePixel = 0
-clearB.Text = "clear"
-clearB.TextColor3 = Color3.fromRGB(255, 255, 255)
-clearB.Font = Enum.Font.GothamBold
-clearB.TextSize = 10
-clearB.ZIndex = 3
-clearB.Parent = fr
-Instance.new("UICorner", clearB).CornerRadius = UDim.new(0, 4)
-
 local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -12, 1, -92)
-scroll.Position = UDim2.new(0, 6, 0, 54)
+scroll.Size = UDim2.new(1, -12, 1, -108)
+scroll.Position = UDim2.new(0, 6, 0, 74)
 scroll.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 3
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.ZIndex = 3
 scroll.Parent = fr
-
 local ll = Instance.new("UIListLayout", scroll)
 ll.SortOrder = Enum.SortOrder.LayoutOrder
 ll.Padding = UDim.new(0, 1)
 local lp = Instance.new("UIPadding", scroll)
-lp.PaddingLeft = UDim.new(0, 4); lp.PaddingRight = UDim.new(0, 4)
-lp.PaddingTop = UDim.new(0, 4); lp.PaddingBottom = UDim.new(0, 4)
+lp.PaddingLeft = UDim.new(0, 4)
+lp.PaddingRight = UDim.new(0, 4)
+lp.PaddingTop = UDim.new(0, 4)
+lp.PaddingBottom = UDim.new(0, 4)
 
 local lines = {}
 local function add(t, c)
@@ -150,6 +147,7 @@ local function add(t, c)
     l.ZIndex = 3
     l.Parent = scroll
     lines[#lines + 1] = tostring(t)
+    print(t)
     task.defer(function()
         scroll.CanvasPosition = Vector2.new(0, math.max(0, ll.AbsoluteContentSize.Y - scroll.AbsoluteSize.Y))
     end)
@@ -163,7 +161,9 @@ do
     title.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1
             or i.UserInputType == Enum.UserInputType.Touch then
-            d = true; ds = i.Position; sp = fr.Position
+            d = true
+            ds = i.Position
+            sp = fr.Position
         end
     end)
     title.InputChanged:Connect(function(i)
@@ -179,25 +179,31 @@ do
     end)
 end
 
-local hasBytecode = type(rawget(getfenv(), "getscriptbytecode")) == "function"
-
 local patterns = {
-    {name = "HttpGet",         pat = "HttpGet",    strong = true},
-    {name = "GetAsync",        pat = "GetAsync",   strong = true},
-    {name = "loadstring",      pat = "loadstring", strong = true},
-    {name = "getfenv",         pat = "getfenv",    strong = true},
-    {name = "setfenv",         pat = "setfenv",    strong = true},
-    {name = "http_request",    pat = "http_request",   strong = true},
-    {name = "request(",        pat = "request(",       strong = false},
-    {name = "webhook",         pat = "webhook",        strong = true},
-    {name = "discord.com/api", pat = "discord.com/api", strong = true},
-    {name = "pastebin",        pat = "pastebin",       strong = true},
-    {name = "hastebin",        pat = "hastebin",       strong = true},
-    {name = "pastes.io",       pat = "pastes.io",      strong = true},
-    {name = "raw.githubusercontent", pat = "raw.githubusercontent", strong = true},
-    {name = "bytecode",        pat = "bytecode",       strong = true},
-    {name = "Kohl",            pat = "Kohl",           strong = false},
-    {name = "Adonis",          pat = "Adonis",         strong = false},
+    {"HttpGet",          "HttpGet",          true},
+    {"GetAsync",         "GetAsync",         true},
+    {"PostAsync",        "PostAsync",        true},
+    {"RequestAsync",     "RequestAsync",     true},
+    {"loadstring",       "loadstring",       true},
+    {"getfenv",          "getfenv",          true},
+    {"setfenv",          "setfenv",          true},
+    {"http_request",     "http_request",     true},
+    {"request(",         "request(",         false},
+    {"webhook",          "webhook",          true},
+    {"discord.com/api",  "discord.com/api",  true},
+    {"discordapp.com/api", "discordapp.com/api", true},
+    {"pastebin",         "pastebin",         true},
+    {"hastebin",         "hastebin",         true},
+    {"pastes.io",        "pastes.io",        true},
+    {"raw.githubusercontent", "raw.githubusercontent", true},
+    {"bytecode",         "bytecode",         true},
+    {"getscriptbytecode","getscriptbytecode",true},
+    {"getreg",           "getreg",           true},
+    {"getgc",            "getgc",            true},
+    {"debug.getupvalue", "debug.getupvalue", true},
+    {"Kohl",             "Kohl",             false},
+    {"Adonis",           "Adonis",           false},
+    {"HD Admin",         "HD Admin",         false},
 }
 
 local knownBadAssets = {
@@ -207,11 +213,13 @@ local knownBadAssets = {
     [11197421823] = "known-backdoor-3",
 }
 
+local scanned, flagged = 0, 0
+
 local function scanBlob(blob)
     local hits = {}
     for _, p in ipairs(patterns) do
-        if p.pat and blob:find(p.pat, 1, true) then
-            hits[#hits+1] = p
+        if blob:find(p[2], 1, true) then
+            hits[#hits+1] = {name = p[1], strong = p[3]}
         end
     end
     for num in blob:gmatch("require%s*%(?%s*(%d%d%d%d%d+)") do
@@ -220,35 +228,22 @@ local function scanBlob(blob)
             hits[#hits+1] = {name = "require(" .. id .. ")", strong = true, asset = id}
         end
     end
-    for num in blob:gmatch("rbxassetid://(%d+)") do
-        local id = tonumber(num)
-        if knownBadAssets[id] then
-            hits[#hits+1] = {name = "known bad asset " .. knownBadAssets[id], strong = true, asset = id}
-        end
-    end
-    for num in blob:gmatch("(%d%d%d%d%d%d%d%d%d+)") do
-        local id = tonumber(num)
-        if knownBadAssets[id] then
-            hits[#hits+1] = {name = "known bad asset " .. knownBadAssets[id], strong = true, asset = id}
+    for id, name in pairs(knownBadAssets) do
+        if blob:find(tostring(id), 1, true) then
+            hits[#hits+1] = {name = "bad asset " .. name .. " (" .. id .. ")", strong = true, asset = id}
         end
     end
     return hits
 end
 
-local scanned, flagged = 0, 0
-
 local function getScriptBlob(inst)
     local ok, src = pcall(function() return inst.Source end)
-    if ok and src and #src > 0 then
-        return src, "source"
-    end
-    if hasBytecode then
+    if ok and src and #src > 0 then return src, "source" end
+    if type(getscriptbytecode) == "function" then
         local ok2, bc = pcall(getscriptbytecode, inst)
-        if ok2 and bc and #bc > 0 then
-            return bc, "bytecode"
-        end
+        if ok2 and bc and #bc > 0 then return bc, "bytecode" end
     end
-    return nil, nil
+    return nil
 end
 
 local function scanInstance(inst)
@@ -261,27 +256,23 @@ local function scanInstance(inst)
         flagged = flagged + 1
         local strong = false
         for _, h in ipairs(hits) do if h.strong then strong = true break end end
-        local color = strong and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 180, 80)
-        add("", Color3.fromRGB(120, 120, 140))
-        add("[" .. (strong and "!!" or "??") .. "] " .. inst:GetFullName(), color)
-        add("     via: " .. kind .. "  | size: " .. #blob, Color3.fromRGB(150, 150, 170))
+        local col = strong and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 180, 80)
+        add("[" .. (strong and "!!" or "??") .. "] " .. inst:GetFullName(), col)
+        add("     " .. kind .. "  " .. #blob .. "b", Color3.fromRGB(150, 150, 170))
         for _, h in ipairs(hits) do
             add("     - " .. h.name, strong and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(255, 200, 120))
-            if h.asset then
-                add("       asset: " .. h.asset, Color3.fromRGB(255, 220, 120))
-            end
         end
     end
 end
 
 local function getRoots()
     local list = {}
-    local names = {
+    for _, n in ipairs({
         "ReplicatedStorage", "ReplicatedFirst", "StarterGui",
         "StarterPack", "StarterPlayer", "Players", "Workspace",
         "ServerScriptService", "ServerStorage", "CoreGui",
-    }
-    for _, n in ipairs(names) do
+        "Chat", "ChatService", "Teams",
+    }) do
         local ok, svc = pcall(game.GetService, game, n)
         if ok and svc then list[#list+1] = svc end
     end
@@ -289,33 +280,178 @@ local function getRoots()
 end
 
 local function doScan()
-    add("scan start", Color3.fromRGB(255, 100, 100))
-    add("place: " .. tostring(game.PlaceId))
-    add("bytecode available: " .. tostring(hasBytecode))
+    add("=== source scan ===", Color3.fromRGB(255, 100, 100))
     scanned, flagged = 0, 0
     for _, r in ipairs(getRoots()) do
-        add("walking: " .. r:GetFullName())
         pcall(function()
             for _, d in ipairs(r:GetDescendants()) do
                 scanInstance(d)
             end
         end)
     end
-    add("", Color3.fromRGB(120, 120, 140))
-    add("scan done", Color3.fromRGB(255, 100, 100))
     add("scanned: " .. scanned .. " | flagged: " .. flagged,
         flagged > 0 and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(140, 255, 140))
-    status.Text = " scanned " .. scanned .. " | flagged " .. flagged
-    status.TextColor3 = flagged > 0 and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(140, 255, 140)
+    status.Text = " source " .. scanned .. "/" .. flagged
 end
 
-local function doDumpAll()
-    if not hasBytecode then
-        add("getscriptbytecode not available", Color3.fromRGB(255, 120, 120))
+local function doMemEnv()
+    add("=== env scan ===", Color3.fromRGB(255, 100, 100))
+    local function checkTable(tbl, label)
+        if type(tbl) ~= "table" then return end
+        local count = 0
+        for k, v in pairs(tbl) do
+            count = count + 1
+            if type(k) == "string" then
+                for _, p in ipairs(patterns) do
+                    if k:find(p[2], 1, true) then
+                        add("[env " .. label .. "] key " .. k, Color3.fromRGB(255, 120, 120))
+                    end
+                end
+            end
+            if type(v) == "string" and #v > 8 then
+                for _, p in ipairs(patterns) do
+                    if v:find(p[2], 1, true) then
+                        add("[env " .. label .. "] " .. tostring(k) .. " = " .. v:sub(1, 60), Color3.fromRGB(255, 120, 120))
+                        break
+                    end
+                end
+            end
+            if count % 500 == 0 then task.wait() end
+        end
+        add("env " .. label .. " - " .. count .. " entries", Color3.fromRGB(150, 150, 170))
+    end
+    checkTable(rawget(getfenv(), "_G"), "_G")
+    checkTable(rawget(getfenv(), "shared"), "shared")
+    if type(getgenv) == "function" then
+        local ok, g = pcall(getgenv)
+        if ok then checkTable(g, "getgenv") end
+    end
+    add("=== gc scan ===", Color3.fromRGB(255, 100, 100))
+    local gc = rawget(getfenv(), "getgc")
+    if type(gc) ~= "function" then
+        add("no getgc", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    local ok, list = pcall(gc, true)
+    if not ok then add("getgc err", Color3.fromRGB(255, 120, 120)) return end
+    add("gc: " .. #list .. " objects", Color3.fromRGB(150, 150, 170))
+    local total, hits = 0, 0
+    for i, obj in ipairs(list) do
+        if type(obj) == "table" then
+            total = total + 1
+            for k, v in pairs(obj) do
+                if type(v) == "string" and #v > 12 then
+                    for _, p in ipairs(patterns) do
+                        if v:find(p[2], 1, true) then
+                            hits = hits + 1
+                            add("[gc] " .. p[1] .. ": " .. v:sub(1, 70), Color3.fromRGB(255, 100, 100))
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        if i % 500 == 0 then task.wait() end
+    end
+    add("gc done: " .. total .. " tables, " .. hits .. " hits", Color3.fromRGB(150, 150, 170))
+end
+
+local hooksInstalled = false
+local requiredSeen, urlSeen = {}, {}
+
+local function installHooks()
+    if hooksInstalled then
+        add("already installed", Color3.fromRGB(255, 220, 120))
+        return
+    end
+    hooksInstalled = true
+    local hf = rawget(getfenv(), "hookfunction")
+    if type(hf) ~= "function" then
+        add("no hookfunction", Color3.fromRGB(255, 120, 120))
+        return
+    end
+
+    local req = rawget(getfenv(), "require")
+    if type(req) == "function" then
+        pcall(function()
+            hf(req, newcclosure(function(id)
+                if type(id) == "number" and id > 100000 and id < 999999999 then
+                    if not requiredSeen[id] then
+                        requiredSeen[id] = true
+                        local known = knownBadAssets[id]
+                        add("[require] " .. id .. (known and (" == " .. known) or ""),
+                            known and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(255, 220, 120))
+                    end
+                end
+                return req(id)
+            end))
+        end)
+    end
+
+    local ls = rawget(getfenv(), "loadstring")
+    if type(ls) == "function" then
+        pcall(function()
+            hf(ls, newcclosure(function(src, name)
+                if type(src) == "string" and #src > 20 then
+                    add("[loadstring] " .. #src .. "b: " .. src:sub(1, 60):gsub("[\n\r]", " "),
+                        Color3.fromRGB(255, 60, 60))
+                    local h2 = scanBlob(src)
+                    for _, h in ipairs(h2) do
+                        add("    - " .. h.name, Color3.fromRGB(255, 120, 120))
+                    end
+                end
+                return ls(src, name)
+            end))
+        end)
+    end
+
+    local hg = rawget(getfenv(), "HttpGet")
+    if type(hg) == "function" then
+        pcall(function()
+            hf(hg, newcclosure(function(url)
+                if type(url) == "string" and not urlSeen[url] then
+                    urlSeen[url] = true
+                    add("[HttpGet] " .. url, Color3.fromRGB(255, 60, 60))
+                end
+                return hg(url)
+            end))
+        end)
+    end
+
+    pcall(function()
+        local old
+        old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if method == "HttpGet" and self == game then
+                if type(args[1]) == "string" and not urlSeen[args[1]] then
+                    urlSeen[args[1]] = true
+                    add("[game:HttpGet] " .. args[1], Color3.fromRGB(255, 60, 60))
+                end
+            end
+            if self == HttpService and (method == "GetAsync" or method == "PostAsync" or method == "RequestAsync" or method == "Get") then
+                local u = args[1]
+                local url = type(u) == "string" and u or (type(u) == "table" and u.Url) or "?"
+                if not urlSeen[url] then
+                    urlSeen[url] = true
+                    add("[HttpService:" .. method .. "] " .. tostring(url):sub(1, 120), Color3.fromRGB(255, 60, 60))
+                end
+            end
+            return old(self, ...)
+        end))
+    end)
+
+    add("hooks installed", Color3.fromRGB(140, 255, 140))
+    status.Text = " hooks live"
+end
+
+local function doDump()
+    if type(getscriptbytecode) ~= "function" then
+        add("no getscriptbytecode", Color3.fromRGB(255, 120, 120))
         return
     end
     if type(rawget(getfenv(), "writefile")) ~= "function" then
-        add("writefile not available", Color3.fromRGB(255, 120, 120))
+        add("no writefile", Color3.fromRGB(255, 120, 120))
         return
     end
     add("dumping", Color3.fromRGB(255, 180, 80))
@@ -327,60 +463,47 @@ local function doDumpAll()
                     local ok2, bc = pcall(getscriptbytecode, d)
                     if ok2 and bc and #bc > 0 then
                         local safe = d:GetFullName():gsub("[/\\:*?\"<>|%.]", "_")
-                        local fname = "bc_" .. safe .. "_" .. tostring(count) .. ".txt"
-                        pcall(writefile, fname, bc)
+                        pcall(writefile, "bc_" .. safe .. "_" .. tostring(count) .. ".txt", bc)
                         count = count + 1
                     end
                 end
             end
         end)
     end
-    add("dumped " .. count .. " scripts", Color3.fromRGB(140, 255, 140))
+    add("dumped " .. count, Color3.fromRGB(140, 255, 140))
     status.Text = " dumped " .. count
-    status.TextColor3 = Color3.fromRGB(140, 255, 140)
 end
 
-scanB.MouseButton1Click:Connect(function()
-    local ok, err = pcall(doScan)
-    if not ok then add("scan err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
-end)
-
-dumpAllB.MouseButton1Click:Connect(function()
-    local ok, err = pcall(doDumpAll)
-    if not ok then add("dump err: " .. tostring(err), Color3.fromRGB(255, 120, 120)) end
-end)
-
-local function copyTry(text)
-    local fns = {
-        rawget(getfenv(), "setclipboard"),
-        rawget(getfenv(), "toclipboard"),
-    }
-    for i, f in ipairs(fns) do
-        if type(f) == "function" then
-            local ok = pcall(f, text)
-            if ok then return i end
-        end
-    end
-    return 0
-end
+scanB.MouseButton1Click:Connect(function() pcall(doScan) end)
+hooksB.MouseButton1Click:Connect(function() pcall(installHooks) end)
+memB.MouseButton1Click:Connect(function() pcall(doMemEnv) end)
+dumpB.MouseButton1Click:Connect(function() pcall(doDump) end)
 
 copyB.MouseButton1Click:Connect(function()
-    local n = copyTry(table.concat(lines, "\n"))
-    copyB.Text = n > 0 and "ok" or "fail"
-    task.delay(1.5, function() copyB.Text = "Copy" end)
+    local fns = {rawget(getfenv(), "setclipboard"), rawget(getfenv(), "toclipboard")}
+    for _, f in ipairs(fns) do
+        if type(f) == "function" then
+            if pcall(f, table.concat(lines, "\n")) then
+                copyB.Text = "copied"
+                task.delay(1.5, function() copyB.Text = "copy" end)
+                return
+            end
+        end
+    end
+    copyB.Text = "fail"
+    task.delay(1.5, function() copyB.Text = "copy" end)
 end)
 
 saveB.MouseButton1Click:Connect(function()
     local wf = rawget(getfenv(), "writefile")
     if type(wf) ~= "function" then
-        saveB.Text = "nofile"
-        task.delay(1.5, function() saveB.Text = "Save" end)
+        saveB.Text = "no"
+        task.delay(1.5, function() saveB.Text = "save" end)
         return
     end
-    local fname = "bd_" .. tostring(os.time()) .. ".txt"
-    local ok = pcall(wf, fname, table.concat(lines, "\n"))
-    saveB.Text = ok and "ok" or "fail"
-    task.delay(1.5, function() saveB.Text = "Save" end)
+    local ok = pcall(wf, "bd_" .. tostring(os.time()) .. ".txt", table.concat(lines, "\n"))
+    saveB.Text = ok and "saved" or "fail"
+    task.delay(1.5, function() saveB.Text = "save" end)
 end)
 
 clearB.MouseButton1Click:Connect(function()
@@ -391,7 +514,4 @@ clearB.MouseButton1Click:Connect(function()
 end)
 
 add("ready", Color3.fromRGB(140, 255, 140))
-add("Scan = flag suspicious scripts", Color3.fromRGB(255, 220, 120))
-add("dump scripts = save to workspace", Color3.fromRGB(255, 220, 120))
-print(">>> ready") 
-print("please don't hate, this is one of my only non vibecoded projects on GitHub. its also open source for anyone who'd like too learn it :)") 
+add("install hooks first", Color3.fromRGB(255, 220, 120))
