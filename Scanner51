@@ -1,13 +1,17 @@
-print(">>> bytecode scanner start")
+print(">>> backdoor scanner loading hi...")
 
-local RS = game:GetService("ReplicatedStorage")
-local plr = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+while not plr do
+    task.wait()
+    plr = Players.LocalPlayer
+end
 local pg = plr:WaitForChild("PlayerGui")
 
-for _, n in ipairs({"BDUI"}) do
-    local o = pg:FindFirstChild(n)
-    if o then o:Destroy() end
-end
+local RS = game:GetService("ReplicatedStorage")
+
+local old = pg:FindFirstChild("BDUI")
+if old then old:Destroy() end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BDUI"
@@ -45,7 +49,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -180, 0, 20)
 title.Position = UDim2.new(0, 6, 0, 4)
 title.BackgroundTransparency = 1
-title.Text = "Bytecode Scanner  [drag]"
+title.Text = "Backdoor Scanner  [drag]"
 title.TextColor3 = Color3.fromRGB(220, 220, 240)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
@@ -78,7 +82,7 @@ status.Size = UDim2.new(1, -12, 0, 20)
 status.Position = UDim2.new(0, 6, 0, 28)
 status.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 status.BorderSizePixel = 0
-status.Text = " IDLE"
+status.Text = " idle"
 status.TextColor3 = Color3.fromRGB(180, 180, 200)
 status.Font = Enum.Font.Code
 status.TextSize = 10
@@ -92,7 +96,7 @@ dumpAllB.Size = UDim2.new(0.5, -8, 0, 24)
 dumpAllB.Position = UDim2.new(0, 6, 1, -30)
 dumpAllB.BackgroundColor3 = Color3.fromRGB(140, 60, 140)
 dumpAllB.BorderSizePixel = 0
-dumpAllB.Text = "DUMP ALL BYTECODE"
+dumpAllB.Text = "dump scripts"
 dumpAllB.TextColor3 = Color3.fromRGB(255, 255, 255)
 dumpAllB.Font = Enum.Font.GothamBold
 dumpAllB.TextSize = 10
@@ -105,7 +109,7 @@ clearB.Size = UDim2.new(0.5, -8, 0, 24)
 clearB.Position = UDim2.new(0.5, 2, 1, -30)
 clearB.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
 clearB.BorderSizePixel = 0
-clearB.Text = "Clear Log"
+clearB.Text = "clear"
 clearB.TextColor3 = Color3.fromRGB(255, 255, 255)
 clearB.Font = Enum.Font.GothamBold
 clearB.TextSize = 10
@@ -175,9 +179,7 @@ do
     end)
 end
 
-local hasBytecode = type(getscriptbytecode) == "function"
-local hasClosure  = type(getscriptclosure) == "function"
-local hasInfo     = type(debug) == "table" and type(debug.info) == "function"
+local hasBytecode = type(rawget(getfenv(), "getscriptbytecode")) == "function"
 
 local patterns = {
     {name = "HttpGet",         pat = "HttpGet",    strong = true},
@@ -212,40 +214,34 @@ local function scanBlob(blob)
             hits[#hits+1] = p
         end
     end
-    -- require(<number>) in bytecode — the number is a constant
     for num in blob:gmatch("require%s*%(?%s*(%d%d%d%d%d+)") do
         local id = tonumber(num)
         if id and id > 100000 and id < 999999999 then
             hits[#hits+1] = {name = "require(" .. id .. ")", strong = true, asset = id}
         end
     end
-    -- rbxassetid in bytecode
     for num in blob:gmatch("rbxassetid://(%d+)") do
         local id = tonumber(num)
         if knownBadAssets[id] then
-            hits[#hits+1] = {name = "KNOWN BAD ASSET " .. knownBadAssets[id], strong = true, asset = id}
+            hits[#hits+1] = {name = "known bad asset " .. knownBadAssets[id], strong = true, asset = id}
         end
     end
-    -- raw asset id followed by "rbxassetid" hint
     for num in blob:gmatch("(%d%d%d%d%d%d%d%d%d+)") do
         local id = tonumber(num)
         if knownBadAssets[id] then
-            hits[#hits+1] = {name = "KNOWN BAD ASSET " .. knownBadAssets[id], strong = true, asset = id}
+            hits[#hits+1] = {name = "known bad asset " .. knownBadAssets[id], strong = true, asset = id}
         end
     end
     return hits
 end
 
 local scanned, flagged = 0, 0
-local dumps = {}
 
 local function getScriptBlob(inst)
-    -- prefer .Source (readable)
     local ok, src = pcall(function() return inst.Source end)
     if ok and src and #src > 0 then
         return src, "source"
     end
-    -- fall back to bytecode
     if hasBytecode then
         local ok2, bc = pcall(getscriptbytecode, inst)
         if ok2 and bc and #bc > 0 then
@@ -279,40 +275,34 @@ local function scanInstance(inst)
 end
 
 local function getRoots()
-    return {
-        game:GetService("ReplicatedStorage"),
-        game:GetService("ReplicatedFirst"),
-        game:GetService("StarterGui"),
-        game:GetService("StarterPack"),
-        game:GetService("StarterPlayer"),
-        game:GetService("Players"),
-        game:GetService("Workspace"),
-        game:GetService("ServerScriptService"),
-        game:GetService("ServerStorage"),
-        game:GetService("CoreGui"),
+    local list = {}
+    local names = {
+        "ReplicatedStorage", "ReplicatedFirst", "StarterGui",
+        "StarterPack", "StarterPlayer", "Players", "Workspace",
+        "ServerScriptService", "ServerStorage", "CoreGui",
     }
+    for _, n in ipairs(names) do
+        local ok, svc = pcall(game.GetService, game, n)
+        if ok and svc then list[#list+1] = svc end
+    end
+    return list
 end
 
 local function doScan()
-    add("backdoor scan", Color3.fromRGB(255, 100, 100))
+    add("scan start", Color3.fromRGB(255, 100, 100))
     add("place: " .. tostring(game.PlaceId))
-    add("bytecode fn: " .. tostring(hasBytecode))
-    add("closure fn: " .. tostring(hasClosure))
-    add("debug.info: " .. tostring(hasInfo))
+    add("bytecode available: " .. tostring(hasBytecode))
     scanned, flagged = 0, 0
     for _, r in ipairs(getRoots()) do
-        local ok = pcall(function() r.Name end)
-        if ok then
-            add("walking: " .. r:GetFullName())
-            pcall(function()
-                for _, d in ipairs(r:GetDescendants()) do
-                    scanInstance(d)
-                end
-            end)
-        end
+        add("walking: " .. r:GetFullName())
+        pcall(function()
+            for _, d in ipairs(r:GetDescendants()) do
+                scanInstance(d)
+            end
+        end)
     end
     add("", Color3.fromRGB(120, 120, 140))
-    add("finished", Color3.fromRGB(255, 100, 100))
+    add("scan done", Color3.fromRGB(255, 100, 100))
     add("scanned: " .. scanned .. " | flagged: " .. flagged,
         flagged > 0 and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(140, 255, 140))
     status.Text = " scanned " .. scanned .. " | flagged " .. flagged
@@ -324,14 +314,14 @@ local function doDumpAll()
         add("getscriptbytecode not available", Color3.fromRGB(255, 120, 120))
         return
     end
-    if type(writefile) ~= "function" then
+    if type(rawget(getfenv(), "writefile")) ~= "function" then
         add("writefile not available", Color3.fromRGB(255, 120, 120))
         return
     end
-    add("bytecode being dumped", Color3.fromRGB(255, 180, 80))
+    add("dumping", Color3.fromRGB(255, 180, 80))
     local count = 0
     for _, r in ipairs(getRoots()) do
-        local ok = pcall(function()
+        pcall(function()
             for _, d in ipairs(r:GetDescendants()) do
                 if d:IsA("LuaSourceContainer") then
                     local ok2, bc = pcall(getscriptbytecode, d)
@@ -345,7 +335,7 @@ local function doDumpAll()
             end
         end)
     end
-    add("dumped " .. count .. " scripts to workspace", Color3.fromRGB(140, 255, 140))
+    add("dumped " .. count .. " scripts", Color3.fromRGB(140, 255, 140))
     status.Text = " dumped " .. count
     status.TextColor3 = Color3.fromRGB(140, 255, 140)
 end
@@ -361,11 +351,10 @@ dumpAllB.MouseButton1Click:Connect(function()
 end)
 
 local function copyTry(text)
-    local fns = {setclipboard, toclipboard, function()
-        return syn and syn.set_clipboard and syn.set_clipboard(text)
-    end, function()
-        return getgenv() and getgenv().setclipboard and getgenv().setclipboard(text)
-    end}
+    local fns = {
+        rawget(getfenv(), "setclipboard"),
+        rawget(getfenv(), "toclipboard"),
+    }
     for i, f in ipairs(fns) do
         if type(f) == "function" then
             local ok = pcall(f, text)
@@ -377,19 +366,20 @@ end
 
 copyB.MouseButton1Click:Connect(function()
     local n = copyTry(table.concat(lines, "\n"))
-    copyB.Text = n > 0 and "OK" or "Fail"
+    copyB.Text = n > 0 and "ok" or "fail"
     task.delay(1.5, function() copyB.Text = "Copy" end)
 end)
 
 saveB.MouseButton1Click:Connect(function()
-    if type(writefile) ~= "function" then
-        saveB.Text = "NoWF"
+    local wf = rawget(getfenv(), "writefile")
+    if type(wf) ~= "function" then
+        saveB.Text = "nofile"
         task.delay(1.5, function() saveB.Text = "Save" end)
         return
     end
-    local fname = "bdscan_" .. tostring(os.time()) .. ".txt"
-    local ok = pcall(writefile, fname, table.concat(lines, "\n"))
-    saveB.Text = ok and "OK" or "Fail"
+    local fname = "bd_" .. tostring(os.time()) .. ".txt"
+    local ok = pcall(wf, fname, table.concat(lines, "\n"))
+    saveB.Text = ok and "ok" or "fail"
     task.delay(1.5, function() saveB.Text = "Save" end)
 end)
 
@@ -400,10 +390,8 @@ clearB.MouseButton1Click:Connect(function()
     lines = {}
 end)
 
-add("ready.", Color3.fromRGB(140, 255, 140))
-add("bytecode fn: " .. tostring(hasBytecode), Color3.fromRGB(200, 200, 220))
-add("Scan = flag scripts", Color3.fromRGB(255, 220, 120))
-add("DUMP ALL = save every bytecode to file", Color3.fromRGB(255, 220, 120))
-add("(open workspace/*.txt after)", Color3.fromRGB(150, 150, 170))
-print(">>> READY")
-print(">>>this is free and open source for a reason. one of my only unvibecoded projects within my GitHub")
+add("ready", Color3.fromRGB(140, 255, 140))
+add("Scan = flag suspicious scripts", Color3.fromRGB(255, 220, 120))
+add("dump scripts = save to workspace", Color3.fromRGB(255, 220, 120))
+print(">>> ready") 
+print("please don't hate, this is one of my only non vibecoded projects on GitHub. its also open source for anyone who'd like too learn it :)") 
