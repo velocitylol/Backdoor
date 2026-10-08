@@ -9,6 +9,17 @@ local HttpService = game:GetService("HttpService")
 local old = pg:FindFirstChild("BDUI")
 if old then old:Destroy() end
 
+-- known bad asset ids (publicly reported)
+local knownBad = {
+    [162816066]   = "Smol_Script",
+    [5408658275]  = "reported-loader-1",
+    [5179641656]  = "reported-loader-2",
+    [11197421823] = "reported-loader-3",
+    [10274621326] = "reported-loader-4",
+    [6561752844]  = "reported-loader-5",
+    [8065590752]  = "reported-loader-6",
+}
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "BDUI"
 gui.ResetOnSpawn = false
@@ -16,8 +27,8 @@ gui.IgnoreGuiInset = true
 gui.Parent = pg
 
 local toggle = Instance.new("TextButton")
-toggle.Size = UDim2.new(0, 32, 0, 32)
-toggle.Position = UDim2.new(0, 8, 0.5, -16)
+toggle.Size = UDim2.new(0, 30, 0, 30)
+toggle.Position = UDim2.new(0, 8, 0.5, -15)
 toggle.BackgroundColor3 = Color3.fromRGB(55, 110, 200)
 toggle.BackgroundTransparency = 0.5
 toggle.BorderSizePixel = 0
@@ -28,107 +39,122 @@ toggle.Font = Enum.Font.GothamBold
 toggle.TextSize = 14
 toggle.ZIndex = 50
 toggle.Parent = gui
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 16)
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 15)
 
 local fr = Instance.new("Frame")
-fr.Size = UDim2.new(0, 340, 0, 400)
-fr.Position = UDim2.new(0.5, -170, 0.5, -200)
-fr.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+fr.Size = UDim2.new(0, 320, 0, 320)
+fr.Position = UDim2.new(0.5, -160, 0.5, -160)
+fr.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 fr.BorderSizePixel = 0
 fr.ZIndex = 2
 fr.Parent = gui
-Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 6)
-local stroke = Instance.new("UIStroke", fr)
-stroke.Color = Color3.fromRGB(60, 60, 90)
+Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 8)
+local outline = Instance.new("UIStroke", fr)
+outline.Color = Color3.fromRGB(255, 255, 255)
+outline.Thickness = 2
+outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 0, 20)
-title.Position = UDim2.new(0, 6, 0, 4)
-title.BackgroundTransparency = 1
-title.Text = "backdoor scanner  [drag]"
-title.TextColor3 = Color3.fromRGB(220, 220, 240)
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.GothamBold
-title.TextSize = 11
-title.ZIndex = 3
-title.Parent = fr
-
-local function mkBtn(t, c, parent)
-    local b = Instance.new("TextButton")
-    b.BackgroundColor3 = c
-    b.BorderSizePixel = 0
-    b.Text = t
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 10
-    b.TextWrapped = true
-    b.ZIndex = 3
-    b.Parent = parent
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    return b
+do
+    local d, ds, sp
+    fr.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+            d = true
+            ds = i.Position
+            sp = fr.Position
+        end
+    end)
+    fr.InputChanged:Connect(function(i)
+        if d and (i.UserInputType == Enum.UserInputType.MouseMovement
+            or i.UserInputType == Enum.UserInputType.Touch) then
+            local v = i.Position - ds
+            fr.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
+        end
+    end)
+    fr.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then d = false end
+    end)
 end
 
-local topBtn = Instance.new("Frame")
-topBtn.Size = UDim2.new(1, -12, 0, 22)
-topBtn.Position = UDim2.new(0, 6, 0, 28)
-topBtn.BackgroundTransparency = 1
-topBtn.ZIndex = 3
-topBtn.Parent = fr
-local tg = Instance.new("UIGridLayout", topBtn)
-tg.CellSize = UDim2.new(0.33, -2, 0, 22)
-tg.CellPadding = UDim2.new(0, 3, 0, 0)
-tg.SortOrder = Enum.SortOrder.LayoutOrder
+local vis = true
+toggle.MouseButton1Click:Connect(function() vis = not vis; fr.Visible = vis end)
 
-local scanB  = mkBtn("scan",          Color3.fromRGB(180, 40, 40),   topBtn)
-local hooksB = mkBtn("install hooks", Color3.fromRGB(120, 60, 140),  topBtn)
-local memB   = mkBtn("mem + env",     Color3.fromRGB(50, 120, 60),   topBtn)
+-- RED BOX - buttons
+local redBox = Instance.new("Frame")
+redBox.Size = UDim2.new(0, 118, 0, 68)
+redBox.Position = UDim2.new(0, 8, 0, 8)
+redBox.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
+redBox.BackgroundTransparency = 0.4
+redBox.BorderSizePixel = 0
+redBox.ZIndex = 3
+redBox.Parent = fr
+Instance.new("UICorner", redBox).CornerRadius = UDim.new(0, 6)
+local redStroke = Instance.new("UIStroke", redBox)
+redStroke.Color = Color3.fromRGB(230, 60, 60)
+redStroke.Thickness = 1.5
 
-local botBtn = Instance.new("Frame")
-botBtn.Size = UDim2.new(1, -12, 0, 22)
-botBtn.Position = UDim2.new(0, 6, 1, -28)
-botBtn.BackgroundTransparency = 1
-botBtn.ZIndex = 3
-botBtn.Parent = fr
-local bg = Instance.new("UIGridLayout", botBtn)
-bg.CellSize = UDim2.new(0.33, -2, 0, 22)
-bg.CellPadding = UDim2.new(0, 3, 0, 0)
-bg.SortOrder = Enum.SortOrder.LayoutOrder
+-- YELLOW BOX - log output
+local yelBox = Instance.new("Frame")
+yelBox.Size = UDim2.new(0, 118, 0, 232)
+yelBox.Position = UDim2.new(0, 8, 0, 82)
+yelBox.BackgroundColor3 = Color3.fromRGB(28, 24, 10)
+yelBox.BackgroundTransparency = 0.3
+yelBox.BorderSizePixel = 0
+yelBox.ZIndex = 3
+yelBox.Parent = fr
+Instance.new("UICorner", yelBox).CornerRadius = UDim.new(0, 6)
+local yelStroke = Instance.new("UIStroke", yelBox)
+yelStroke.Color = Color3.fromRGB(230, 190, 60)
+yelStroke.Thickness = 1.5
 
-local copyB  = mkBtn("copy",  Color3.fromRGB(55, 110, 200), botBtn)
-local saveB  = mkBtn("save",  Color3.fromRGB(70, 70, 110),  botBtn)
-local clearB = mkBtn("clear", Color3.fromRGB(55, 55, 70),   botBtn)
+-- CYAN BOX - require scripts
+local cyanBox = Instance.new("Frame")
+cyanBox.Size = UDim2.new(0, 178, 0, 306)
+cyanBox.Position = UDim2.new(0, 134, 0, 8)
+cyanBox.BackgroundColor3 = Color3.fromRGB(8, 22, 24)
+cyanBox.BackgroundTransparency = 0.2
+cyanBox.BorderSizePixel = 0
+cyanBox.ZIndex = 3
+cyanBox.Parent = fr
+Instance.new("UICorner", cyanBox).CornerRadius = UDim.new(0, 6)
+local cyanStroke = Instance.new("UIStroke", cyanBox)
+cyanStroke.Color = Color3.fromRGB(60, 220, 220)
+cyanStroke.Thickness = 1.5
 
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -12, 0, 18)
-status.Position = UDim2.new(0, 6, 0, 52)
-status.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-status.BorderSizePixel = 0
-status.Text = " idle"
-status.TextColor3 = Color3.fromRGB(180, 180, 200)
-status.Font = Enum.Font.Code
-status.TextSize = 10
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.ZIndex = 3
-status.Parent = fr
-Instance.new("UICorner", status).CornerRadius = UDim.new(0, 4)
+local cyanTitle = Instance.new("TextLabel")
+cyanTitle.Size = UDim2.new(1, -8, 0, 16)
+cyanTitle.Position = UDim2.new(0, 4, 0, 4)
+cyanTitle.BackgroundTransparency = 1
+cyanTitle.Text = "backdoor scripts"
+cyanTitle.TextColor3 = Color3.fromRGB(120, 240, 240)
+cyanTitle.TextXAlignment = Enum.TextXAlignment.Left
+cyanTitle.Font = Enum.Font.GothamBold
+cyanTitle.TextSize = 10
+cyanTitle.ZIndex = 4
+cyanTitle.Parent = cyanBox
 
+-- scroll output (yellow box)
 local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -12, 1, -108)
-scroll.Position = UDim2.new(0, 6, 0, 74)
-scroll.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+scroll.Size = UDim2.new(1, -8, 1, -8)
+scroll.Position = UDim2.new(0, 4, 0, 4)
+scroll.BackgroundColor3 = Color3.fromRGB(10, 10, 4)
+scroll.BackgroundTransparency = 0.5
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 3
+scroll.ScrollBarImageColor3 = Color3.fromRGB(200, 180, 60)
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.ZIndex = 3
-scroll.Parent = fr
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.ZIndex = 4
+scroll.Parent = yelBox
 local ll = Instance.new("UIListLayout", scroll)
 ll.SortOrder = Enum.SortOrder.LayoutOrder
 ll.Padding = UDim.new(0, 1)
 local lp = Instance.new("UIPadding", scroll)
-lp.PaddingLeft = UDim.new(0, 4)
-lp.PaddingRight = UDim.new(0, 4)
-lp.PaddingTop = UDim.new(0, 4)
-lp.PaddingBottom = UDim.new(0, 4)
+lp.PaddingLeft = UDim.new(0, 3)
+lp.PaddingRight = UDim.new(0, 3)
+lp.PaddingTop = UDim.new(0, 3)
+lp.PaddingBottom = UDim.new(0, 3)
 
 local lines = {}
 local function add(t, c)
@@ -137,13 +163,13 @@ local function add(t, c)
     l.AutomaticSize = Enum.AutomaticSize.Y
     l.BackgroundTransparency = 1
     l.Text = tostring(t)
-    l.TextColor3 = c or Color3.fromRGB(200, 200, 210)
+    l.TextColor3 = c or Color3.fromRGB(240, 220, 120)
     l.Font = Enum.Font.Code
-    l.TextSize = 10
+    l.TextSize = 8
     l.TextXAlignment = Enum.TextXAlignment.Left
     l.TextWrapped = true
     l.LayoutOrder = #lines + 1
-    l.ZIndex = 3
+    l.ZIndex = 4
     l.Parent = scroll
     lines[#lines + 1] = tostring(t)
     print(t)
@@ -152,67 +178,99 @@ local function add(t, c)
     end)
 end
 
-local vis = true
-toggle.MouseButton1Click:Connect(function() vis = not vis; fr.Visible = vis end)
+-- scroll for require scripts (cyan box)
+local reqScroll = Instance.new("ScrollingFrame")
+reqScroll.Size = UDim2.new(1, -8, 1, -26)
+reqScroll.Position = UDim2.new(0, 4, 0, 22)
+reqScroll.BackgroundColor3 = Color3.fromRGB(4, 12, 14)
+reqScroll.BorderSizePixel = 0
+reqScroll.ScrollBarThickness = 3
+reqScroll.ScrollBarImageColor3 = Color3.fromRGB(60, 180, 180)
+reqScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+reqScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+reqScroll.ZIndex = 4
+reqScroll.Parent = cyanBox
+local rl = Instance.new("UIListLayout", reqScroll)
+rl.SortOrder = Enum.SortOrder.LayoutOrder
+rl.Padding = UDim.new(0, 2)
+local rp = Instance.new("UIPadding", reqScroll)
+rp.PaddingLeft = UDim.new(0, 3)
+rp.PaddingRight = UDim.new(0, 3)
+rp.PaddingTop = UDim.new(0, 3)
+rp.PaddingBottom = UDim.new(0, 3)
 
-do
-    local d, ds, sp
-    title.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-            or i.UserInputType == Enum.UserInputType.Touch then
-            d = true
-            ds = i.Position
-            sp = fr.Position
+-- populate cyan box with require() scripts
+for id, name in pairs(knownBad) do
+    local card = Instance.new("TextButton")
+    card.Size = UDim2.new(1, 0, 0, 34)
+    card.BackgroundColor3 = Color3.fromRGB(12, 40, 44)
+    card.BackgroundTransparency = 0.3
+    card.BorderSizePixel = 0
+    card.Text = "require(" .. id .. ")\n" .. name
+    card.TextColor3 = Color3.fromRGB(160, 240, 240)
+    card.Font = Enum.Font.Code
+    card.TextSize = 9
+    card.TextXAlignment = Enum.TextXAlignment.Left
+    card.TextWrapped = true
+    card.ZIndex = 4
+    card.Parent = reqScroll
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 4)
+    card.MouseButton1Click:Connect(function()
+        local fns = {rawget(getfenv(), "setclipboard"), rawget(getfenv(), "toclipboard")}
+        for _, f in ipairs(fns) do
+            if type(f) == "function" then
+                if pcall(f, "require(" .. id .. ")") then
+                    add("copied require(" .. id .. ")", Color3.fromRGB(140, 255, 140))
+                    return
+                end
+            end
         end
-    end)
-    title.InputChanged:Connect(function(i)
-        if d and (i.UserInputType == Enum.UserInputType.MouseMovement
-            or i.UserInputType == Enum.UserInputType.Touch) then
-            local v = i.Position - ds
-            fr.Position = UDim2.new(sp.X.Scale, sp.X.Offset + v.X, sp.Y.Scale, sp.Y.Offset + v.Y)
-        end
-    end)
-    title.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-            or i.UserInputType == Enum.UserInputType.Touch then d = false end
     end)
 end
 
+-- purple circle buttons
+local function purpleBtn(txt, x, y, cb)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 30, 0, 30)
+    b.Position = UDim2.new(0, x, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(150, 80, 220)
+    b.BorderSizePixel = 0
+    b.Text = txt
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.ZIndex = 4
+    b.Parent = redBox
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 15)
+    b.MouseButton1Click:Connect(function() pcall(cb) end)
+    return b
+end
+
 local patterns = {
-    {"HttpGet",          "HttpGet",          true},
-    {"GetAsync",         "GetAsync",         true},
-    {"PostAsync",        "PostAsync",        true},
-    {"RequestAsync",     "RequestAsync",     true},
-    {"loadstring",       "loadstring",       true},
-    {"getfenv",          "getfenv",          true},
-    {"setfenv",          "setfenv",          true},
-    {"http_request",     "http_request",     true},
-    {"request(",         "request(",         false},
-    {"webhook",          "webhook",          true},
-    {"discord.com/api",  "discord.com/api",  true},
-    {"discordapp.com/api", "discordapp.com/api", true},
-    {"pastebin",         "pastebin",         true},
-    {"hastebin",         "hastebin",         true},
-    {"pastes.io",        "pastes.io",        true},
+    {"HttpGet",           "HttpGet",            true},
+    {"GetAsync",          "GetAsync",           true},
+    {"PostAsync",         "PostAsync",          true},
+    {"RequestAsync",      "RequestAsync",       true},
+    {"loadstring",        "loadstring",         true},
+    {"getfenv",           "getfenv",            true},
+    {"setfenv",           "setfenv",            true},
+    {"http_request",      "http_request",       true},
+    {"request(",          "request(",           false},
+    {"webhook",           "webhook",            true},
+    {"discord.com/api",   "discord.com/api",    true},
+    {"discordapp.com/api","discordapp.com/api", true},
+    {"pastebin",          "pastebin",           true},
+    {"hastebin",          "hastebin",           true},
+    {"pastes.io",         "pastes.io",          true},
     {"raw.githubusercontent", "raw.githubusercontent", true},
-    {"bytecode",         "bytecode",         true},
-    {"getscriptbytecode","getscriptbytecode",true},
-    {"getreg",           "getreg",           true},
-    {"getgc",            "getgc",            true},
-    {"debug.getupvalue", "debug.getupvalue", true},
-    {"Kohl",             "Kohl",             false},
-    {"Adonis",           "Adonis",           false},
-    {"HD Admin",         "HD Admin",         false},
+    {"getscriptbytecode", "getscriptbytecode",  true},
+    {"getreg",            "getreg",             true},
+    {"getgc",             "getgc",              true},
+    {"debug.getupvalue",  "debug.getupvalue",   true},
+    {"Kohl",              "Kohl",               false},
+    {"Adonis",            "Adonis",             false},
+    {"HD Admin",          "HD Admin",           false},
 }
-
-local knownBadAssets = {
-    [162816066]   = "Smol_Script",
-    [5408658275]  = "known-backdoor-1",
-    [5179641656]  = "known-backdoor-2",
-    [11197421823] = "known-backdoor-3",
-}
-
-local scanned, flagged = 0, 0
 
 local function scanBlob(blob)
     local hits = {}
@@ -227,9 +285,9 @@ local function scanBlob(blob)
             hits[#hits+1] = {name = "require(" .. id .. ")", strong = true, asset = id}
         end
     end
-    for id, name in pairs(knownBadAssets) do
+    for id, name in pairs(knownBad) do
         if blob:find(tostring(id), 1, true) then
-            hits[#hits+1] = {name = "bad asset " .. name .. " (" .. id .. ")", strong = true, asset = id}
+            hits[#hits+1] = {name = "bad " .. name .. " (" .. id .. ")", strong = true, asset = id}
         end
     end
     return hits
@@ -243,25 +301,6 @@ local function getScriptBlob(inst)
         if ok2 and bc and #bc > 0 then return bc, "bytecode" end
     end
     return nil
-end
-
-local function scanInstance(inst)
-    if not inst:IsA("LuaSourceContainer") then return end
-    local blob, kind = getScriptBlob(inst)
-    if not blob then return end
-    scanned = scanned + 1
-    local hits = scanBlob(blob)
-    if #hits > 0 then
-        flagged = flagged + 1
-        local strong = false
-        for _, h in ipairs(hits) do if h.strong then strong = true break end end
-        local col = strong and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 180, 80)
-        add("[" .. (strong and "!!" or "??") .. "] " .. inst:GetFullName(), col)
-        add("     " .. kind .. "  " .. #blob .. "b", Color3.fromRGB(150, 150, 170))
-        for _, h in ipairs(hits) do
-            add("     - " .. h.name, strong and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(255, 200, 120))
-        end
-    end
 end
 
 local function getRoots()
@@ -278,8 +317,28 @@ local function getRoots()
     return list
 end
 
+local scanned, flagged = 0, 0
+
+local function scanInstance(inst)
+    if not inst:IsA("LuaSourceContainer") then return end
+    local blob, kind = getScriptBlob(inst)
+    if not blob then return end
+    scanned = scanned + 1
+    local hits = scanBlob(blob)
+    if #hits > 0 then
+        flagged = flagged + 1
+        local strong = false
+        for _, h in ipairs(hits) do if h.strong then strong = true break end end
+        local col = strong and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 180, 80)
+        add("[" .. (strong and "!!" or "??") .. "] " .. inst.Name, col)
+        for _, h in ipairs(hits) do
+            add("  - " .. h.name, strong and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(255, 200, 120))
+        end
+    end
+end
+
 local function doScan()
-    add("=== source scan ===", Color3.fromRGB(255, 100, 100))
+    add("== scan ==", Color3.fromRGB(255, 120, 120))
     scanned, flagged = 0, 0
     for _, r in ipairs(getRoots()) do
         pcall(function()
@@ -288,13 +347,12 @@ local function doScan()
             end
         end)
     end
-    add("scanned: " .. scanned .. " | flagged: " .. flagged,
+    add("scanned " .. scanned .. " flagged " .. flagged,
         flagged > 0 and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(140, 255, 140))
-    status.Text = " source " .. scanned .. "/" .. flagged
 end
 
 local function doMemEnv()
-    add("=== env scan ===", Color3.fromRGB(255, 100, 100))
+    add("== env ==", Color3.fromRGB(255, 120, 120))
     local function checkTable(tbl, label)
         if type(tbl) ~= "table" then return end
         local count = 0
@@ -303,21 +361,21 @@ local function doMemEnv()
             if type(k) == "string" then
                 for _, p in ipairs(patterns) do
                     if k:find(p[2], 1, true) then
-                        add("[env " .. label .. "] key " .. k, Color3.fromRGB(255, 120, 120))
+                        add("env " .. label .. ": " .. k, Color3.fromRGB(255, 120, 120))
                     end
                 end
             end
             if type(v) == "string" and #v > 8 then
                 for _, p in ipairs(patterns) do
                     if v:find(p[2], 1, true) then
-                        add("[env " .. label .. "] " .. tostring(k) .. " = " .. v:sub(1, 60), Color3.fromRGB(255, 120, 120))
+                        add("env " .. label .. ": " .. v:sub(1, 40), Color3.fromRGB(255, 120, 120))
                         break
                     end
                 end
             end
             if count % 500 == 0 then task.wait() end
         end
-        add("env " .. label .. " - " .. count .. " entries", Color3.fromRGB(150, 150, 170))
+        add("env " .. label .. ": " .. count, Color3.fromRGB(200, 180, 60))
     end
     checkTable(rawget(getfenv(), "_G"), "_G")
     checkTable(rawget(getfenv(), "shared"), "shared")
@@ -325,7 +383,6 @@ local function doMemEnv()
         local ok, g = pcall(getgenv)
         if ok then checkTable(g, "getgenv") end
     end
-    add("=== gc scan ===", Color3.fromRGB(255, 100, 100))
     local gc = rawget(getfenv(), "getgc")
     if type(gc) ~= "function" then
         add("no getgc", Color3.fromRGB(255, 120, 120))
@@ -333,17 +390,17 @@ local function doMemEnv()
     end
     local ok, list = pcall(gc, true)
     if not ok then add("getgc err", Color3.fromRGB(255, 120, 120)) return end
-    add("gc: " .. #list .. " objects", Color3.fromRGB(150, 150, 170))
+    add("gc " .. #list, Color3.fromRGB(200, 180, 60))
     local total, hits = 0, 0
     for i, obj in ipairs(list) do
         if type(obj) == "table" then
             total = total + 1
-            for k, v in pairs(obj) do
+            for _, v in pairs(obj) do
                 if type(v) == "string" and #v > 12 then
                     for _, p in ipairs(patterns) do
                         if v:find(p[2], 1, true) then
                             hits = hits + 1
-                            add("[gc] " .. p[1] .. ": " .. v:sub(1, 70), Color3.fromRGB(255, 100, 100))
+                            add("gc: " .. p[1] .. " " .. v:sub(1, 40), Color3.fromRGB(255, 100, 100))
                             break
                         end
                     end
@@ -352,7 +409,7 @@ local function doMemEnv()
         end
         if i % 500 == 0 then task.wait() end
     end
-    add("gc done: " .. total .. " tables, " .. hits .. " hits", Color3.fromRGB(150, 150, 170))
+    add("gc done " .. total .. " hits " .. hits, Color3.fromRGB(200, 180, 60))
 end
 
 local hooksInstalled = false
@@ -360,7 +417,7 @@ local requiredSeen, urlSeen = {}, {}
 
 local function installHooks()
     if hooksInstalled then
-        add("already installed", Color3.fromRGB(255, 220, 120))
+        add("already hooked", Color3.fromRGB(255, 220, 120))
         return
     end
     hooksInstalled = true
@@ -377,8 +434,8 @@ local function installHooks()
                 if type(id) == "number" and id > 100000 and id < 999999999 then
                     if not requiredSeen[id] then
                         requiredSeen[id] = true
-                        local known = knownBadAssets[id]
-                        add("[require] " .. id .. (known and (" == " .. known) or ""),
+                        local known = knownBad[id]
+                        add("[require] " .. id .. (known and (" " .. known) or ""),
                             known and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(255, 220, 120))
                     end
                 end
@@ -392,11 +449,11 @@ local function installHooks()
         pcall(function()
             hf(ls, newcclosure(function(src, name)
                 if type(src) == "string" and #src > 20 then
-                    add("[loadstring] " .. #src .. "b: " .. src:sub(1, 60):gsub("[\n\r]", " "),
+                    add("[ls] " .. #src .. "b " .. src:sub(1, 30):gsub("[\n\r]", " "),
                         Color3.fromRGB(255, 60, 60))
                     local h2 = scanBlob(src)
                     for _, h in ipairs(h2) do
-                        add("    - " .. h.name, Color3.fromRGB(255, 120, 120))
+                        add("  " .. h.name, Color3.fromRGB(255, 120, 120))
                     end
                 end
                 return ls(src, name)
@@ -410,7 +467,7 @@ local function installHooks()
             hf(hg, newcclosure(function(url)
                 if type(url) == "string" and not urlSeen[url] then
                     urlSeen[url] = true
-                    add("[HttpGet] " .. url, Color3.fromRGB(255, 60, 60))
+                    add("[HttpGet] " .. url:sub(1, 40), Color3.fromRGB(255, 60, 60))
                 end
                 return hg(url)
             end))
@@ -425,7 +482,7 @@ local function installHooks()
             if method == "HttpGet" and self == game then
                 if type(args[1]) == "string" and not urlSeen[args[1]] then
                     urlSeen[args[1]] = true
-                    add("[game:HttpGet] " .. args[1], Color3.fromRGB(255, 60, 60))
+                    add("[game:HttpGet] " .. args[1]:sub(1, 40), Color3.fromRGB(255, 60, 60))
                 end
             end
             if self == HttpService and (method == "GetAsync" or method == "PostAsync" or method == "RequestAsync" or method == "Get") then
@@ -433,42 +490,32 @@ local function installHooks()
                 local url = type(u) == "string" and u or (type(u) == "table" and u.Url) or "?"
                 if not urlSeen[url] then
                     urlSeen[url] = true
-                    add("[HttpService:" .. method .. "] " .. tostring(url):sub(1, 120), Color3.fromRGB(255, 60, 60))
+                    add("[" .. method .. "] " .. tostring(url):sub(1, 40), Color3.fromRGB(255, 60, 60))
                 end
             end
             return old(self, ...)
         end))
     end)
 
-    add("hooks installed", Color3.fromRGB(140, 255, 140))
-    status.Text = " hooks live"
+    add("hooked", Color3.fromRGB(140, 255, 140))
 end
 
-scanB.MouseButton1Click:Connect(function() pcall(doScan) end)
-hooksB.MouseButton1Click:Connect(function() pcall(installHooks) end)
-memB.MouseButton1Click:Connect(function() pcall(doMemEnv) end)
-
-copyB.MouseButton1Click:Connect(function()
+purpleBtn("S", 8,  6, doScan)
+purpleBtn("H", 44, 6, installHooks)
+purpleBtn("M", 80, 6, doMemEnv)
+purpleBtn("C", 8,  38, function()
     local fns = {rawget(getfenv(), "setclipboard"), rawget(getfenv(), "toclipboard")}
     for _, f in ipairs(fns) do
         if type(f) == "function" then
             if pcall(f, table.concat(lines, "\n")) then
-                copyB.Text = "copied"
-                task.delay(1.5, function() copyB.Text = "copy" end)
+                add("copied", Color3.fromRGB(140, 255, 140))
                 return
             end
         end
     end
-    copyB.Text = "fail"
-    task.delay(1.5, function() copyB.Text = "copy" end)
+    add("clip fail", Color3.fromRGB(255, 120, 120))
 end)
-
-saveB.MouseButton1Click:Connect(function()
-    saveB.Text = "n/a"
-    task.delay(1.5, function() saveB.Text = "save" end)
-end)
-
-clearB.MouseButton1Click:Connect(function()
+purpleBtn("X", 44, 38, function()
     for _, c in ipairs(scroll:GetChildren()) do
         if c:IsA("TextLabel") then c:Destroy() end
     end
@@ -476,4 +523,7 @@ clearB.MouseButton1Click:Connect(function()
 end)
 
 add("ready", Color3.fromRGB(140, 255, 140))
-add("install hooks first", Color3.fromRGB(255, 220, 120))
+add("S=scan H=hooks M=mem")
+add("C=copy X=clear")
+add("tap cyan card to copy require()")
+print("ready")
