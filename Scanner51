@@ -90,11 +90,10 @@ botBtn.BackgroundTransparency = 1
 botBtn.ZIndex = 3
 botBtn.Parent = fr
 local bg = Instance.new("UIGridLayout", botBtn)
-bg.CellSize = UDim2.new(0.25, -2, 0, 22)
+bg.CellSize = UDim2.new(0.33, -2, 0, 22)
 bg.CellPadding = UDim2.new(0, 3, 0, 0)
 bg.SortOrder = Enum.SortOrder.LayoutOrder
 
-local dumpB  = mkBtn("dump",  Color3.fromRGB(160, 90, 40),  botBtn)
 local copyB  = mkBtn("copy",  Color3.fromRGB(55, 110, 200), botBtn)
 local saveB  = mkBtn("save",  Color3.fromRGB(70, 70, 110),  botBtn)
 local clearB = mkBtn("clear", Color3.fromRGB(55, 55, 70),   botBtn)
@@ -445,39 +444,9 @@ local function installHooks()
     status.Text = " hooks live"
 end
 
-local function doDump()
-    if type(getscriptbytecode) ~= "function" then
-        add("no getscriptbytecode", Color3.fromRGB(255, 120, 120))
-        return
-    end
-    if type(rawget(getfenv(), "writefile")) ~= "function" then
-        add("no writefile", Color3.fromRGB(255, 120, 120))
-        return
-    end
-    add("dumping", Color3.fromRGB(255, 180, 80))
-    local count = 0
-    for _, r in ipairs(getRoots()) do
-        pcall(function()
-            for _, d in ipairs(r:GetDescendants()) do
-                if d:IsA("LuaSourceContainer") then
-                    local ok2, bc = pcall(getscriptbytecode, d)
-                    if ok2 and bc and #bc > 0 then
-                        local safe = d:GetFullName():gsub("[/\\:*?\"<>|%.]", "_")
-                        pcall(writefile, "bc_" .. safe .. "_" .. tostring(count) .. ".txt", bc)
-                        count = count + 1
-                    end
-                end
-            end
-        end)
-    end
-    add("dumped " .. count, Color3.fromRGB(140, 255, 140))
-    status.Text = " dumped " .. count
-end
-
 scanB.MouseButton1Click:Connect(function() pcall(doScan) end)
 hooksB.MouseButton1Click:Connect(function() pcall(installHooks) end)
 memB.MouseButton1Click:Connect(function() pcall(doMemEnv) end)
-dumpB.MouseButton1Click:Connect(function() pcall(doDump) end)
 
 copyB.MouseButton1Click:Connect(function()
     local fns = {rawget(getfenv(), "setclipboard"), rawget(getfenv(), "toclipboard")}
@@ -495,14 +464,7 @@ copyB.MouseButton1Click:Connect(function()
 end)
 
 saveB.MouseButton1Click:Connect(function()
-    local wf = rawget(getfenv(), "writefile")
-    if type(wf) ~= "function" then
-        saveB.Text = "no"
-        task.delay(1.5, function() saveB.Text = "save" end)
-        return
-    end
-    local ok = pcall(wf, "bd_" .. tostring(os.time()) .. ".txt", table.concat(lines, "\n"))
-    saveB.Text = ok and "saved" or "fail"
+    saveB.Text = "n/a"
     task.delay(1.5, function() saveB.Text = "save" end)
 end)
 
